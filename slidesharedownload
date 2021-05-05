@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# Copyright 2021 Melwyn Francis Carlo
+
+# Replace with the appropriate web address.
+weburl_part_1="https://image.slidesharecdn.com/aeronauticalvestpockethandbook"
+weburl_part_1="${weburl_part_1}prattwhitney22ndedsep1991ocr-150905200617-lva1-"
+weburl_part_1="${weburl_part_1}app6891/95/aeronautical-vestpocket-handbook-"
+weburl_part_1="${weburl_part_1}united-technologies-pratt-whitney-22nd-edition-"
+weburl_part_1="${weburl_part_1}sep-1991-"
+# The page number goes between these two parts of the web URL.
+weburl_part_2="-638.jpg"
+
+# Do not change this variable.
+page_i=1
+# This variable holds the total number of pages.
+pages_n=201
+
+# This configuration may be left unchanged.
+waittime=0.5
+filetests_n=3
+
+# Do not change this variable.
+fileslist=""
+
+if ! wget --spider -S "$weburl_part_1$page_i$weburl_part_2" 2>&1 | grep -qw \
+"200" || ! wget --spider -S "$weburl_part_1$pages_n$weburl_part_2" 2>&1 | \
+grep -qw "200"
+then
+
+    echo -ne "\n\n  $(tput bold)ERROR:$(tput sgr0) "
+    echo -e  "The input web URL is either down, or does not exist.\n\n"
+
+else
+
+    while [ $page_i -le $pages_n ]
+    do
+        filetest_i=1
+        fileslist="$fileslist img_${page_i}.jpg"
+        wget -q -O "img_${page_i}.jpg" "$weburl_part_1$page_i$weburl_part_2"
+        while [ $filetest_i -le $filetests_n ]
+        do
+            if [ -f "img_${page_i}.jpg" ]
+            then
+                break
+            else
+                sleep $waittime
+            fi
+            if [ $filetest_i -eq $filetests_n ]
+            then
+                let "page_i=page_i-1"
+            fi
+            let "filetest_i=filetest_i+1"
+        done
+        let "page_i=page_i+1"
+    done
+
+    python3 img2pdf.py $fileslist
+
+fi
+
+page_i=1
+
+while [ $page_i -le $pages_n ]
+do
+    rm -f "img_${page_i}.jpg"
+    let "page_i=page_i+1"
+done
+
+touch *
+
+echo -e  "\n\n  Done! \n\n"
+
+
